@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSH Honeypot Login Attempts</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>SSH Honeypot Login Attempts</h1>
+    <table id="login_attempts" border="1">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Timestamp</th>
+                <th>Username</th>
+                <th>Password</th>
+                <th>IP Address</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <script>
+        function fetchLoginAttempts() {
+            $.getJSON("/login_attempts", function(data) {
+                let tableBody = $("#login_attempts tbody");
+                tableBody.empty();
+                data.forEach(function(attempt) {
+                    let row = $("<tr>");
+                    row.append($("<td>").text(attempt.id));
+                    row.append($("<td>").text(attempt.timestamp));
+                    row.append($("<td>").text(attempt.username));
+                    row.append($("<td>").text(attempt.password));
+                    row.append($("<td>").text(attempt.ip_address));
+                    tableBody.append(row);
+                });
+            });
+        }
+
+        $(document).ready(function() {
+            fetchLoginAttempts();
+            setInterval(fetchLoginAttempts, 5000);
+        });
+    </script>
+</body>
+</html>
