@@ -47,10 +47,17 @@ def start_honeypot_server():
     server_socket.listen(5)
 
     while True:
-        client_socket, addr = server_socket.accept()
-        transport = Transport(client_socket)
-        transport.add_server_key(host_key)
-        transport.start_server(server=SSHHoneypot(addr[0]))
+        try:
+            client_socket, addr = server_socket.accept()
+            transport = Transport(client_socket)
+            transport.add_server_key(host_key)
+            transport.start_server(server=SSHHoneypot(addr[0]))
+        except EOFError:
+            print(f"Error reading SSH protocol banner from {addr[0]}:{addr[1]}")
+            transport.close()
+        except Exception as e:
+            print(f"Exception caught in start_honeypot_server: {e}")
+            transport.close()
 
 if __name__ == "__main__":
     try:
