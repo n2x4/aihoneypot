@@ -1,27 +1,36 @@
-import libsql_client
-import asyncio
 import sys
 import threading
 import time
+import libsql_client
 from paramiko import ServerInterface, RSAKey, Transport, AUTH_FAILED
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 
-# Set up the libsql database prior to setup
+# Set up the Turso-hosted database
+url = "libsql://your-database.turso.io"
+auth_token = "your-auth-token"
+client = libsql_client.create_client_sync(url=url, auth_token=auth_token)
+
+# Create the table if not exists
+client.execute("""
+    CREATE TABLE IF NOT EXISTS login_attempts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        username TEXT,
+        password TEXT,
+        ip_address TEXT
+    )
+""")
 
 class SSHHoneypot(ServerInterface):
     def __init__(self, ip_address):
         self.ip_address = ip_address
 
     def check_auth_password(self, username, password):
-        # Log the login attempt to the SQLite database
-        conn = sqlite3.connect("login_attempts.db")
-        cursor = conn.cursor()
-        cursor.execute("""
+        # Log the login attempt to the Turso-hosted database
+        client.execute("""
             INSERT INTO login_attempts (username, password, ip_address)
             VALUES (?, ?, ?)
         """, (username, password, self.ip_address))
-        conn.commit()
-        conn.close()
 
         # Print the login attempt to the terminal
         print(f"Login attempt: {self.ip_address} - {username}:{password}")
@@ -53,4 +62,5 @@ if __name__ == "__main__":
         start_honeypot_server()
     except KeyboardInterrupt:
         print("Shutting down honeypot server")
+        client.close()  # Close the Turso database client
         sys.exit(0)
